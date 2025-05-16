@@ -1,147 +1,141 @@
 # Sports API Management System
 
-## **Project Overview**
-This project demonstrates building a containerized API management system for querying sports data. It leverages **Amazon ECS (Fargate)** for running containers, **Amazon API Gateway** for exposing REST endpoints, and an external **Sports API** for real-time sports data. The project showcases advanced cloud computing practices, including API management, container orchestration, and secure AWS integrations.
+This project demonstrates how to build a containerized API management system for querying sports data. It uses Amazon ECS (Fargate) to run a Flask application in containers, Amazon API Gateway to expose REST endpoints, and an external Sports API for real-time data. The project showcases API management, container orchestration, and secure AWS integrations.
 
----
+## Description
 
-## **Features**
-- Exposes a REST API for querying real-time sports data
-- Runs a containerized backend using Amazon ECS with Fargate
-- Scalable and serverless architecture
-- API management and routing using Amazon API Gateway
- 
----
+The system exposes a REST API endpoint for real-time sports data. A Dockerized Flask backend is deployed to ECS using Fargate, and the API is accessible via Application Load Balancer and API Gateway.
 
-## **Prerequisites**
-- **Sports API Key**: Sign up for a free account and subscription & obtain your API Key at serpapi.com
-- **AWS Account**: Create an AWS Account & have basic understanding of ECS, API Gateway, Docker & Python
-- **AWS CLI Installed and Configured**: Install & configure AWS CLI to programatically interact with AWS
-- **Serpapi Library**: Install Serpapi library in local environment "pip install google-search-results"
-- **Docker CLI and Desktop Installed**: To build & push container images
+## Features
 
----
+- REST API for real-time sports data
+- Flask app containerized with Docker
+- Deployed using ECS with Fargate
+- API Gateway integration for public access
+- Scalable, serverless, and secure architecture
 
-## **Technical Architecture**
+## Technologies Used
 
-**Technologies**
-- Cloud Provider: AWS
-- Core Services: Amazon ECS (Fargate), API Gateway, CloudWatch
-- Programming Language: Python 3.x
-- Containerization: Docker
-- IAM Security: Custom least privilege policies for ECS task execution and API Gateway
+- AWS ECS (Fargate)
+- Amazon API Gateway
+- Docker
+- Python (Flask)
+- IAM (custom roles and policies)
+- CloudWatch for monitoring
 
----
+## Project Structure
 
-## **Project Structure**
-sports-api-management/ ├── app.py # Flask application for querying sports data ├── Dockerfile # Dockerfile to containerize the Flask app ├── requirements.txt # Python dependencies ├── .gitignore └── README.md # Project documentation
+sports-api-management/
+├── app.py
+├── Dockerfile
+├── requirements.txt
+├── .gitignore
+└── README.md
 
+## Prerequisites
 
----
+- AWS Account
+- Sports API Key (from serpapi.com)
+- Docker installed locally
+- AWS CLI installed and configured
+- Python 3.x with Serpapi package installed (`pip install google-search-results`)
 
-## **Setup Instructions**
+## Setup Instructions
 
-1. **Clone the Repository**
+### 1. Clone the repository
 
-```bash
-git clone https://github.com/ifeanyiro9/containerized-sports-api.git
-cd containerized-sports-api
-Create ECR Repository
-bash
+git clone https://github.com/NazBilgic/sports-api-containerized.git  
+cd sports-api-containerized
+
+### 2. Create an Amazon ECR Repository
 
 aws ecr create-repository --repository-name sports-api --region us-east-1
-Authenticate, Build, and Push the Docker Image
+
+### 3. Build and Push Docker Image
+
 Authenticate to ECR:
 
-bash
-
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
-Build the Docker Image:
 
-bash
+Build the Docker image:
 
 docker build --platform linux/amd64 -t sports-api .
-Tag the Image:
 
-bash
+Tag the image:
 
 docker tag sports-api:latest <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/sports-api:sports-api-latest
-Push the Docker Image to ECR:
 
-bash
+Push the image:
 
 docker push <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/sports-api:sports-api-latest
-Set Up ECS Cluster with Fargate
-a. Create an ECS Cluster
-Go to the ECS Console → Clusters → Create Cluster
-Name your Cluster: sports-api-cluster
-For Infrastructure, select Fargate, then create the Cluster
 
-b. Create a Task Definition
-Go to Task Definitions → Create New Task Definition
-Name your task definition: sports-api-task
-For Infrastructure, select Fargate
-Add the container:
+## Deploy with ECS and Fargate
 
-Name: sports-api-container
-Image URI: <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/sports-api:sports-api-latest
-Container Port: 8080
-Protocol: TCP
-App Protocol: HTTP
-Define Environment Variables:
-Key: SPORTS_API_KEY
-Value: <YOUR_SPORTSDATA.IO_API_KEY>
-Create the Task Definition
+### 1. Create an ECS Cluster
 
-Run the Service with an ALB
-a. Create the Service
-Go to Clusters → Select Cluster → Service → Create
-Capacity Provider: Fargate
-Deployment Configuration: Choose the family sports-api-task
-Desired Tasks: 2
-Networking: Create a new security group
-Networking Configuration:
+- Go to ECS Console → Create Cluster
+- Select Fargate
+- Name: sports-api-cluster
 
-Type: All TCP
-Source: Anywhere
-b. Configure Load Balancing
-Select Application Load Balancer (ALB)
-Create a new ALB:
+### 2. Create Task Definition
 
-Name: sports-api-alb
-Target Group health check path: /sports
-Create Service
-Test the ALB
-After deploying the ECS service, note the DNS name of the ALB (e.g., sports-api-alb-<AWS_ACCOUNT_ID>.us-east-1.elb.amazonaws.com)
-Test the API by visiting the URL with /sports (e.g., http://sports-api-alb-<AWS_ACCOUNT_ID>.us-east-1.elb.amazonaws.com/sports)
+- Task family: sports-api-task
+- Launch type: Fargate
+- Container:
+  - Name: sports-api-container
+  - Image: sports-api:sports-api-latest
+  - Port: 8080
+- Add environment variable:
+  - Key: SPORTS_API_KEY
+  - Value: your SerpAPI key
 
-Configure API Gateway
-a. Create a New REST API
-Go to API Gateway Console → Create API → REST API
-Name the API: Sports API Gateway
+### 3. Create Service
 
-b. Set Up Integration
-Create a resource: /sports
-Create a GET method
-Choose HTTP Proxy as the integration type
-Enter the DNS name of the ALB (e.g., http://sports-api-alb-<AWS_ACCOUNT_ID>.us-east-1.elb.amazonaws.com/sports)
+- Go to ECS Cluster → Create Service
+- Launch type: Fargate
+- Task definition: sports-api-task
+- Desired count: 2
+- Create new security group: allow all TCP (for testing)
+- Create new Application Load Balancer
+- Health check path: /sports
 
-c. Deploy the API
-Deploy the API to a stage (e.g., prod)
-Note the endpoint URL
+### 4. Test ALB
 
-Test the System
-Use curl or a browser to test the API:
-bash
+Visit:  
+http://<alb-dns-name>/sports
 
-curl https://<api-gateway-id>.execute-api.us-east-1.amazonaws.com/prod/sports
+## Configure API Gateway
 
-What We Learned
-Setting up a scalable, containerized application with Amazon ECS (Fargate)
-Creating public APIs using Amazon API Gateway
+### 1. Create REST API
 
-Future Enhancements
-Add caching for frequent API requests using Amazon ElastiCache
-Add DynamoDB to store user-specific queries and preferences
-Secure the API Gateway using an API key or IAM-based authentication
-Implement CI/CD for automating container deployments
+- Go to API Gateway → Create REST API
+- Resource: /sports
+- Method: GET
+- Integration type: HTTP Proxy
+- Endpoint: http://<alb-dns-name>/sports
+
+### 2. Deploy
+
+- Create a deployment stage (e.g., prod)
+- Note the public endpoint URL
+
+Test it:  
+curl https://<api-id>.execute-api.us-east-1.amazonaws.com/prod/sports
+
+## What You Learned
+
+- How to containerize and deploy a Flask app on ECS
+- Using Fargate for serverless container orchestration
+- Creating a public API via API Gateway
+- Secure integration of external APIs into AWS-based systems
+
+## Future Enhancements
+
+- Add caching with ElastiCache
+- Store logs or preferences in DynamoDB
+- Protect API Gateway with keys or IAM auth
+- Implement CI/CD pipeline for automated builds
+
+
+Naz Bilgiç  
+linkedin.com/in/nazbilgic
